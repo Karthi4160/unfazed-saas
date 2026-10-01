@@ -4,9 +4,9 @@
 
 Built with the MERN stack, integrated with Razorpay payments, real-time chat via Socket.io, PDF invoicing, and a fully configurable subscription entitlement system.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-success)](https://unfazed-frontend-ten.vercel.app)
-[![Backend API](https://img.shields.io/badge/API-Live-blue)](https://unfazed-backend-7re3.onrender.com/api/health)
-[![Admin Panel](https://img.shields.io/badge/Admin-Panel-purple)](https://unfazed-frontend-ten.vercel.app/admin)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-success)](https://unfazed-saas.vercel.app)
+[![Backend API](https://img.shields.io/badge/API-Live-blue)](https://unfazed-saas-backend.onrender.com/api/health)
+[![Admin Panel](https://img.shields.io/badge/Admin-Panel-purple)](https://unfazed-saas.vercel.app/admin)
 
 ---
 
@@ -29,10 +29,10 @@ Plus a **Super Admin panel** for platform operators to manage all therapists, tr
 
 | Service | URL |
 |---------|-----|
-| Frontend | https://unfazed-frontend-ten.vercel.app |
-| Backend API | https://unfazed-backend-7re3.onrender.com |
-| Admin Panel | https://unfazed-frontend-ten.vercel.app/admin |
-| Public Profile Demo | https://unfazed-frontend-ten.vercel.app/karthick |
+| Frontend | https://https://unfazed-saas.vercel.app |
+| Backend API | https://unfazed-saas-backend.onrender.com |
+| Admin Panel | https://https://unfazed-saas.vercel.app/admin |
+| Public Profile Demo | https://https://unfazed-saas.vercel.app/karthick |
 
 **Demo Credentials:**
 
