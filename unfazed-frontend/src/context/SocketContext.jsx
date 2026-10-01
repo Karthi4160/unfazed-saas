@@ -47,8 +47,8 @@ export const SocketProvider = ({ children }) => {
     newSocket.on('connect', () => {
       console.log('[Socket] connected:', newSocket.id);
       newSocket.emit('authenticate', {
-        userId,
-        userType: normalizedUserType
+        userId: user.id || user._id,
+        userType: userType === 'client' ? 'Client' : 'Therapist'
       });
     });
 
