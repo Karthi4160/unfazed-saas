@@ -1,15 +1,47 @@
-﻿import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+﻿import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import brand from '../../config/brand';
 
 const ClientRegister = () => {
   const [form, setForm] = useState({
-    name: '', email: '', password: '', confirmPassword: '', phone: ''
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    therapistSlug: ''
   });
+  const [therapists, setTherapists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+  useEffect(() => {
+    // Pre-select therapist if passed via URL (?therapist=slug)
+    const slugFromUrl = searchParams.get('therapist');
+    if (slugFromUrl) {
+      setForm(prev => ({ ...prev, therapistSlug: slugFromUrl }));
+    }
+    fetchTherapists();
+  }, []);
+
+  const fetchTherapists = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/therapists`);
+      const list = res.data.therapists || [];
+      setTherapists(list);
+      // Auto-select if only one therapist
+      if (list.length === 1 && !form.therapistSlug) {
+        setForm(prev => ({ ...prev, therapistSlug: list[0].slug }));
+      }
+    } catch (err) {
+      console.error('Fetch therapists error:', err);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,15 +53,18 @@ const ClientRegister = () => {
     if (form.password.length < 6) {
       return setError('Password must be at least 6 characters');
     }
+    if (!form.therapistSlug) {
+      return setError('Please select your therapist');
+    }
 
     setLoading(true);
     try {
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
       const res = await axios.post(`${API_URL}/auth/client/register`, {
         name: form.name,
         email: form.email,
         password: form.password,
-        phone: form.phone
+        phone: form.phone,
+        therapistSlug: form.therapistSlug
       });
 
       const { token, client } = res.data;
@@ -55,35 +90,23 @@ const ClientRegister = () => {
       {/* LEFT: Brand panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-teal-600 via-emerald-700 to-slate-900 opacity-90" />
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'radial-gradient(circle at 80% 40%, rgba(255,255,255,0.08) 0%, transparent 50%)'
-        }} />
-
         <div className="relative z-10 p-12 flex flex-col justify-between w-full">
           <Link to="/" className="flex items-center gap-2 w-fit">
             <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-emerald-700 font-bold">
               {brand.logoLetter}
             </div>
-            <span className="text-xl font-semibold text-white tracking-tight">{brand.name}</span>
+            <span className="text-xl font-semibold text-white">{brand.name}</span>
           </Link>
-
           <div>
             <h1 className="text-4xl font-bold text-white leading-tight mb-4">
               Begin your wellness journey.
             </h1>
-            <p className="text-emerald-100 text-lg leading-relaxed max-w-md">
-              Create your account, book your first session, and start feeling better.
+            <p className="text-emerald-100 text-lg max-w-md">
+              Create your account, choose your therapist, and book your first session.
             </p>
-
-            <div className="mt-10 p-5 rounded-xl bg-emerald-800/30 backdrop-blur border border-emerald-400/30">
-              <p className="text-emerald-50 text-sm leading-relaxed">
-                <span className="font-semibold text-white">Fast, private, and secure.</span> Your therapist sees only what you choose to share.
-              </p>
-            </div>
           </div>
-
           <div className="text-emerald-200 text-xs">
-            🔒 HIPAA-inspired privacy standards
+            🔒 Your data is private and encrypted.
           </div>
         </div>
       </div>
@@ -95,14 +118,12 @@ const ClientRegister = () => {
             <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold">
               {brand.logoLetter}
             </div>
-            <span className="text-xl font-semibold tracking-tight text-slate-900">{brand.name}</span>
+            <span className="text-xl font-semibold text-slate-900">{brand.name}</span>
           </Link>
 
           <div className="mb-8">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900">Create your account</h2>
-            <p className="text-sm text-slate-500 mt-2">
-              Takes less than 2 minutes.
-            </p>
+            <h2 className="text-3xl font-bold text-slate-900">Create your account</h2>
+            <p className="text-sm text-slate-500 mt-2">Takes less than 2 minutes.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -134,6 +155,25 @@ const ClientRegister = () => {
                 className="input-field"
                 placeholder="you@example.com"
               />
+            </div>
+
+            {/* NEW: Therapist selection */}
+            <div>
+              <label className="label">Select your therapist</label>
+              <select
+                required
+                value={form.therapistSlug}
+                onChange={(e) => setForm({ ...form, therapistSlug: e.target.value })}
+                className="input-field"
+              >
+                <option value="">Choose a therapist</option>
+                {therapists.map(t => (
+                  <option key={t._id} value={t.slug}>{t.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-1">
+                Your therapist will see you in their client list
+              </p>
             </div>
 
             <div>
@@ -175,12 +215,6 @@ const ClientRegister = () => {
             <button type="submit" disabled={loading} className="w-full btn-primary py-3">
               {loading ? 'Creating account...' : 'Create account'}
             </button>
-
-            <p className="text-xs text-slate-500 text-center leading-relaxed">
-              By signing up, you agree to our{' '}
-              <a href="#" className="text-emerald-600 hover:underline">Terms</a> and{' '}
-              <a href="#" className="text-emerald-600 hover:underline">Privacy Policy</a>.
-            </p>
           </form>
 
           <div className="mt-6 text-center text-sm text-slate-500">
