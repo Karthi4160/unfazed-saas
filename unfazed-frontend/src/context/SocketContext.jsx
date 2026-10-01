@@ -12,12 +12,10 @@ export const SocketProvider = ({ children }) => {
   const { user, token, userType, isAuthenticated } = useAuth();
   const socketRef = useRef(null);
 
-  // Only depend on token + isAuthenticated — NOT on user object
   const userId = user?._id || user?.id;
   const normalizedUserType = userType === 'client' ? 'Client' : 'Therapist';
 
   useEffect(() => {
-    // Disconnect if not authenticated
     if (!isAuthenticated || !token || !userId) {
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -27,29 +25,43 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    // Already connected as same user → do nothing
     if (socketRef.current && socketRef.current.connected) {
       return;
     }
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
-    console.log('[Socket] Creating new connection for', normalizedUserType, userId);
     const newSocket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      autoConnect: true
     });
 
     socketRef.current = newSocket;
+    setSocket(newSocket);
+
+    // Re-authenticate on EVERY connect (handles reconnects)
+    const registerSelf = () => {
+      console.log('[Socket] Registering:', normalizedUserType, userId, 'socket:', newSocket.id);
+      newSocket.emit('authenticate', {
+        userId,
+        userType: normalizedUserType
+      });
+    };
 
     newSocket.on('connect', () => {
       console.log('[Socket] connected:', newSocket.id);
-      newSocket.emit('authenticate', {
-        userId: user.id || user._id,
-        userType: userType === 'client' ? 'Client' : 'Therapist'
-      });
+      registerSelf();
+    });
+
+    // Also handle reconnection events
+    newSocket.io.on('reconnect', () => {
+      console.log('[Socket] reconnected');
+      registerSelf();
     });
 
     newSocket.on('disconnect', (reason) => {
@@ -57,7 +69,11 @@ export const SocketProvider = ({ children }) => {
     });
 
     newSocket.on('connect_error', (err) => {
-      console.error('[Socket] connection error:', err.message);
+      console.error('[Socket] connect_error:', err.message);
+    });
+
+    newSocket.on('error', (err) => {
+      console.error('[Socket] error event:', err);
     });
 
     newSocket.on('user_online', (data) => {
@@ -73,25 +89,14 @@ export const SocketProvider = ({ children }) => {
       ));
     });
 
-    setSocket(newSocket);
-
     return () => {
-      // Do NOT disconnect on unmount unless logged out — the connection should persist
+      // Do not disconnect here — persists across renders
     };
   }, [isAuthenticated, token, userId, normalizedUserType]);
 
-  // Cleanup only on explicit logout
-  useEffect(() => {
-    if (!isAuthenticated && socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
-      setSocket(null);
-    }
-  }, [isAuthenticated]);
-
   const sendMessage = (toUserId, toUserType, message, type = 'text') => {
     if (!socketRef.current || !socketRef.current.connected) {
-      console.warn('[Socket] not connected — cannot send');
+      console.warn('[Socket] Not connected');
       return false;
     }
     socketRef.current.emit('send_message', {
