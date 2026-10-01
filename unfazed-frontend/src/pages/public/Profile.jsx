@@ -240,9 +240,12 @@ const PublicProfile = () => {
                 ))}
               </div>
 
-              <Link to={`/client/register?therapist=${slug}`} className="btn-primary">
+              <Link
+                to="/client/register"
+                className="mt-5 w-full btn-primary justify-center py-3"
+              >
                 Book a session
-              </Link> 
+              </Link>
 
               <p className="text-xs text-slate-500 text-center mt-3">
                 You'll need a free account to book

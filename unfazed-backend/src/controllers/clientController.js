@@ -230,13 +230,14 @@ exports.clientRegister = async (req, res) => {
     }
 
     // Find therapist
-    if (!therapistSlug) {
-      return res.status(400).json({ message: 'Therapist selection is required' });
+    let therapist;
+    if (therapistSlug) {
+      therapist = await Therapist.findOne({ slug: therapistSlug });
+    } else {
+      therapist = await Therapist.findOne({ isActive: true });
     }
-
-    const therapist = await Therapist.findOne({ slug: therapistSlug, isActive: true });
     if (!therapist) {
-      return res.status(404).json({ message: 'Therapist not found' });
+      return res.status(404).json({ message: 'No therapist available' });
     }
 
     // Check for existing client
